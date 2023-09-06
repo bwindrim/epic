@@ -17,7 +17,7 @@ check_delay = 120 #minutes
 rotate_delay = 20 #seconds
 
 # Set up the drawing window
-screen = pygame.display.set_mode([480,480], pygame.FULLSCREEN)
+screen = pygame.display.set_mode([720,720], pygame.FULLSCREEN)
 pygame.mouse.set_visible(0)
 
 # Fill the background with black
@@ -56,22 +56,22 @@ def save_photos(imageurls):
         image = pygame.image.load(image_file)
 
         # Crop out the centre 830px square from the image to make globe fill screen
-        cropped = pygame.Surface((830,830))
-        cropped.blit(image,(0,0),(125,125,830,830))
-        cropped = pygame.transform.scale(cropped, (480,480))
+        cropped = pygame.Surface((880,880))
+        cropped.blit(image,(0,0),(100,100,880,880))
+        cropped = pygame.transform.scale(cropped, (720,720))
 
         pygame.image.save(cropped,"./"+str(counter)+".jpg")
         counter+=1
     print("photos saved")
 
 def rotate_photos(num_photos, rotate_delay):
-    counter=0
-    while counter<num_photos:
+    for counter in range(num_photos):
         # First check if anyone's tried to quit the app while we've been rotating
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                
+        
+        print("Showing./"+str(counter)+".jpg")
         # Create a surface object and draw image on it.
         image = pygame.image.load(r"./"+str(counter)+".jpg")
 
@@ -79,9 +79,8 @@ def rotate_photos(num_photos, rotate_delay):
         screen.blit(image, (0,0))
         pygame.display.flip()
         
-        counter+=1
-        
         # How many seconds to wait between changing images
+        print("Sleeping for", rotate_delay, "seconds")
         time.sleep(rotate_delay)
 
 # Run until the user asks to quit
