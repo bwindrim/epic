@@ -32,9 +32,15 @@ print("Checking for new photos every "+str(check_delay)+" minutes")
 print("Rotating photos every "+str(rotate_delay)+" seconds")
 
 def get_epic_images_json():
-    # Call the epic api
-    response = requests.get("https://epic.gsfc.nasa.gov/api/natural")
-    imjson = response.json()
+    try:
+        # Call the epic api
+        response = requests.get("https://epic.gsfc.nasa.gov/api/natural")
+        imjson = response.json()
+    except KeyboardInterrupt:
+        raise
+    except:
+        print("API request failed")
+        return None
     return imjson
 
 
@@ -52,17 +58,26 @@ def save_photos(imageurls):
     counter=0
     for imageurl in imageurls:
         # Create a surface object, draw image on it..
-        image_file = io.BytesIO(urlopen(imageurl).read())
-        image = pygame.image.load(image_file)
+        try:
+            image_file = io.BytesIO(urlopen(imageurl).read())
+            image = pygame.image.load(image_file)
+        except KeyboardInterrupt:
+            raise
+        except:
+            print("Failed to read image file from URL", imageurl)
+            image = None
 
-        # Crop out the centre 830px square from the image to make globe fill screen
-        cropped = pygame.Surface((880,880))
-        cropped.blit(image,(0,0),(100,100,880,880))
-        cropped = pygame.transform.scale(cropped, (720,720))
+        if image:
 
-        pygame.image.save(cropped,"./"+str(counter)+".jpg")
-        counter+=1
-    print("photos saved")
+            # Crop out the centre 880px square from the image to make globe fill screen
+            cropped = pygame.Surface((880,880))
+            cropped.blit(image,(0,0),(100,100,880,880))
+            cropped = pygame.transform.scale(cropped, (720,720))
+
+            filename = "./"+str(counter)+".jpg"
+            pygame.image.save(cropped, filename)
+            counter+=1
+    print(counter, "photos saved")
 
 def rotate_photos(num_photos, rotate_delay):
     for counter in range(num_photos):
@@ -71,18 +86,22 @@ def rotate_photos(num_photos, rotate_delay):
             if event.type == pygame.QUIT:
                 pygame.quit()
         
-        print("Showing./"+str(counter)+".jpg")
-        # Create a surface object and draw image on it.
-        image = pygame.image.load(r"./"+str(counter)+".jpg")
+        try:
+            print("Showing./"+str(counter)+".jpg")
+            # Create a surface object and draw image on it.
+            image = pygame.image.load(r"./"+str(counter)+".jpg")
 
-        # Display image
-        screen.blit(image, (0,0))
-        pygame.display.flip()
-        
-        # How many seconds to wait between changing images
-        print("Sleeping for", rotate_delay, "seconds")
-        time.sleep(rotate_delay)
+            # Display image
+            screen.blit(image, (0,0))
+            pygame.display.flip()
 
+            # How many seconds to wait between changing images
+            print("Sleeping for", rotate_delay, "seconds")
+            time.sleep(rotate_delay)
+        except KeyboardInterrupt:
+            raise
+        except:
+            print("Couldn't load ./"+str(counter)+".jpg - skipping")
 # Run until the user asks to quit
 running = True
 first_run = True
@@ -105,21 +124,23 @@ while running:
         last_check = datetime.datetime.now()
     
         json = get_epic_images_json()
-        newest_data=json[0]["date"]
-    
-        print("OLD: "+last_data)
-        print("NEW: "+newest_data)
         
-        # If there are new images available, download them, then quickly display them all.
-        if last_data != newest_data:
-            print("Ooh! New Images!")
-            last_data = newest_data
-            imageurls = create_image_urls(json)    
-            save_photos(imageurls)
-            num_photos = len(imageurls)
-            rotate_photos(num_photos, 1)
-        else:
-            print("No new images")
+        if json:
+            newest_data=json[0]["date"]
+
+            print("OLD: "+last_data)
+            print("NEW: "+newest_data)
+
+            # If there are new images available, download them, then quickly display them all.
+            if last_data != newest_data:
+                print("Ooh! New Images!")
+                last_data = newest_data
+                imageurls = create_image_urls(json)
+                save_photos(imageurls)
+                num_photos = len(imageurls)
+                rotate_photos(num_photos, 1)
+            else:
+                print("No new images")
 
     # Show each photo in order.
     rotate_photos(num_photos, rotate_delay)
